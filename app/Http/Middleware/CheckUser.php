@@ -15,6 +15,10 @@ class CheckUser
      */
     public function handle(Request $request, Closure $next, $role): Response
     {
+        if ($request->isMethod('OPTIONS')) {
+            return response()->json([], 200);
+        }
+
         $user = auth()->user();
 
         // Cek apakah user login

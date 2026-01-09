@@ -18,6 +18,12 @@ use App\Http\Controllers\Api\TimbanganController;
 use App\Http\Controllers\Api\TransaksiController;
 use App\Http\Controllers\Api\PenangananController;
 
+Route::options('{any}', function (Request $request) {
+    return response()->json([], 200)
+        ->header('Access-Control-Allow-Origin', $request->header('Origin') ?? '*')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+})->where('any', '.*');
 
 Route::prefix('v1')->group(function() {
     Route::prefix('auth')->group(function(){
