@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Goats;
 use App\Models\Users;
+use App\Models\ItemInvestasi;
 use App\Models\Cage;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class GoatsController extends Controller
 {
@@ -380,6 +382,104 @@ class GoatsController extends Controller
             ], 500);
         }
     }
+    
+    public function getDashboardStats($userId)
+    {
+        try {
+
+            $totalDomba = DB::table('item_investment')
+                ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
+                ->where('investasi.users_id', $userId)
+                ->distinct('item_investment.product_id')
+                ->count('item_investment.product_id');
+
+            $totalAnakan = Goats::where('users_id', $userId)
+                ->where('jenis_product', 'anakan')
+                ->count();
+
+            $aktifBreeding = Goats::where('users_id', $userId)
+                ->where('jenis_product', 'indukan')
+                ->whereHas('breedingAsFemale', function ($q) {
+                    $q->where('status', 'pregnant');
+                })
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dashboard stats berhasil diambil',
+                'data' => [
+                    'total_domba'    => $totalDomba,
+                    'total_anakan'   => $totalAnakan,
+                    'aktif_breeding' => $aktifBreeding,
+                ]
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil dashboard stats',
+                'data' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function recentSales()
+    {
+        $items = ItemInvestasi::with('product')
+            ->latest()
+            ->take(10)
+            ->get()
+            ->unique('product_id')
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $items->map(function ($item) {
+                return [
+                    'id_product' => $item->product->id_product,
+                    'nama_product' => $item->product->nama_product,
+                    'type_product' => $item->product->type_product,
+                    'jumlah_investasi' => $item->jumlah_investasi,
+                ];
+            })
+        ]);
+    }
+
+    public function bestSelling()
+    {
+        $data = ItemInvestasi::join(
+                'product',
+                'item_investment.product_id',
+                '=',
+                'product.id_product'
+            )
+            ->select(
+                'product.type_product',
+                DB::raw('COUNT(item_investment.product_id) as total_transaksi')
+            )
+            ->groupBy('product.type_product')
+            ->orderByDesc('total_transaksi')
+            ->get();
+
+        $max = $data->max('total_transaksi');
+
+        $result = $data->map(function ($item) use ($max) {
+            return [
+                'type_product' => $item->type_product,
+                'total_transaksi' => $item->total_transaksi,
+                'percentage' => $max > 0
+                    ? round(($item->total_transaksi / $max) * 100)
+                    : 0
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $result
+        ]);
+    }
+
 
     /**
      * Mengambil public_id dari URL Cloudinary

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Users;
 use App\Models\Goats;
+use App\Models\ItemInvestasi;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -218,6 +219,38 @@ class InvestorController extends Controller
         ]);
     }
 
+
+    public function AddProduct(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'investasi_id' => 'required|exists:investasi,id_investasi',
+                'product_id' => 'required|exists:product,id_product',
+                'jumlah_investasi' => 'required|integer',
+            ]);
+
+            if($validator->fails()){
+                return response()->json([
+                    'message' => 'Failed to add data investasi',
+                    'error' => $validator->errors()
+                ], 422);
+            }
+
+            $result = $validator->validated();
+            $item = ItemInvestasi::create($result);
+            return response()->json([
+                'success' => true,
+                'message' => 'Data Item Investasi berhasil di tambahkan',
+                'data' => $item
+            ], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data Item Investasi gagal ditambahkan',
+                'data' => $th->getMessage()
+            ], 500);
+        }
+    }
 
     public function getTotalMitra()
     {

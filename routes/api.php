@@ -32,6 +32,7 @@ Route::prefix('v1')->group(function() {
     Route::apiResource('mitra', InvestorController::class)
         ->middleware('auth:api','checkuser:admin');
 
+    Route::post('/invest/products', [InvestorController::class, 'AddProduct']);
     Route::get('/mitra/{kode_unik}/products', [InvestorController::class, 'products']);
 
     
@@ -45,6 +46,8 @@ Route::prefix('v1')->group(function() {
     Route::apiResource('kesehatan', HealthRecordController::class);
     Route::apiResource('pregnant', PregnantController::class);
     Route::apiResource('investment', InvestmentController::class);
+    Route::get('/product/recent', [GoatsController::class, 'recentSales']);
+    Route::get('/product/best', [GoatsController::class, 'bestSelling']);
 
 
     Route::middleware(['auth:api'])->group(function () {
@@ -95,6 +98,10 @@ Route::prefix('v1')->group(function() {
     Route::middleware(['auth:api'])->group(function() {
         Route::get('/pregnant', [PregnantController::class, 'index']);
         Route::get('/pregnant/{kode_kehamilan}', [PregnantController::class, 'show']);
+        Route::get('/invest/total', [InvestmentController::class, 'getTotalInvestment']);
+        Route::get('/investor/total', [InvestorController::class, 'getTotalMitra']);
+        Route::get('/investasi/total/{kode_unik}', [InvestmentController::class, 'getTotalInvestByUsers']);
+        Route::get('/stats/{kode_unik}', [GoatsController::class, 'getDashboardStats']);
     });
 
     Route::middleware(['auth:api', 'checkuser:admin'])->group(function () {
@@ -106,7 +113,5 @@ Route::prefix('v1')->group(function() {
     // Route::get('/product/mothers', [GoatsController::class, 'getOnlyFatherId']);
     // Route::get('/product/fathers', [GoatsController::class, 'getOnlyMotherId']);
     Route::apiResource('timbangan', TimbanganController::class);
-    Route::get('/invest/total', [InvestmentController::class, 'getTotalInvestment']);
-    Route::get('/investor/total', [InvestorController::class, 'getTotalMitra']);
-    Route::get('/investasi/total/{kode_unik}', [InvestmentController::class, 'getTotalInvestByUsers']);
+    
 });
