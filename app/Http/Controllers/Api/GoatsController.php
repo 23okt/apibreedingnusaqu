@@ -196,8 +196,8 @@ class GoatsController extends Controller
                     'status' => 'required|string',
                     'mother_id' => 'nullable|exists:product,kode_product',
                     'father_id' =>'nullable|exists:product,kode_product',
-                    'users_id' => 'required|exists:users,kode_unik',
-                    'kandang_id' => 'required|exists:kandang,kode_kandang',
+                    'users_id' => 'nullable|exists:users,kode_unik',
+                    'kandang_id' => 'nullable|exists:kandang,kode_kandang',
             ]);
 
             if ($validator->fails()) {
