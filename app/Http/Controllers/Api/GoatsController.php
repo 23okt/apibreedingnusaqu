@@ -68,6 +68,8 @@ class GoatsController extends Controller
             }
     
             $result = $validator->validated();
+            $photos = ['photo1','photo2','photo3'];
+            $prefix = $result['jenis_product'] === 'anakan' ? 'AQ' : 'NQ';
             if (!empty($result['users_id'])) {
                 $users = Users::where('kode_unik', $result['users_id'])->firstOrFail();
                 $result['users_id'] = $users->id_users;
