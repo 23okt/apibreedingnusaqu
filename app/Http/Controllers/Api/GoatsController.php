@@ -68,14 +68,19 @@ class GoatsController extends Controller
             }
     
             $result = $validator->validated();
-            $prefix = $result['jenis_product'] === 'anakan' ? 'AQ' : 'NQ';
-            $photos = ['photo1','photo2','photo3'];
-            
-            $users = Users::where('kode_unik', $result['users_id'])->firstOrFail();
-            $kandang = Cage::where('kode_kandang', $result['kandang_id'])->firstOrFail();
+            if (!empty($result['users_id'])) {
+                $users = Users::where('kode_unik', $result['users_id'])->firstOrFail();
+                $result['users_id'] = $users->id_users;
+            } else {
+                $result['users_id'] = null;
+            }
 
-            $result['users_id'] = $users->id_users;
-            $result['kandang_id'] = $kandang->id_kandang;
+            if (!empty($result['kandang_id'])) {
+                $kandang = Cage::where('kode_kandang', $result['kandang_id'])->firstOrFail();
+                $result['kandang_id'] = $kandang->id_kandang;
+            } else {
+                $result['kandang_id'] = null;
+            }
     
             foreach ($photos as $photo) {
                 if ($request->hasFile($photo)) {
