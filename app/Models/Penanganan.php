@@ -16,7 +16,7 @@ class Penanganan extends Model
 
     public function kesehatan(): BelongsTo
     {
-        return $this->belongsTo(Kesehatan::class, 'kesehatan_id', 'id_kesehatan');
+        return $this->belongsTo(HealthRecord::class, 'kesehatan_id', 'id_kesehatan');
     }
 
     public function items()

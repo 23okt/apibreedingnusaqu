@@ -14,7 +14,7 @@ class ItemPenanganan extends Model
 
     public function obat(): BelongsTo
     {
-        return $this->belongsTo(Obat::class, 'obat_id', 'id_obat');
+        return $this->belongsTo(Pharmacy::class, 'obat_id', 'id_obat');
     }
 
     public function penanganan()

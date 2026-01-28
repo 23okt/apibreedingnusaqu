@@ -12,7 +12,7 @@ class TimbanganController extends Controller
 {
     public function index()
     {
-        $timbangan = Timbangan::get();
+        $timbangan = Timbangan::with('goats')->orderBy('created_at', 'desc')->get();
 
         try {
             return response()->json([

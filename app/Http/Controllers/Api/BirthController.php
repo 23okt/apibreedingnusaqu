@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Birth;
+use App\Models\ItemKelahiran;
 use App\Models\Breeding;
+use App\Models\Goats;
+use Illuminate\Support\Facades\DB;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Validator;
 
@@ -13,7 +16,7 @@ class BirthController extends Controller
 {
     public function index()
     {
-        $birth = Birth::get();
+        $birth = Birth::orderBy('created_at','desc')->get();
 
         try {
             return response()->json([
@@ -32,65 +35,82 @@ class BirthController extends Controller
 
     public function store(Request $request)
     {
-        
-        $FILE_SIZE = 1024 * 5;
-        $rand_number = rand(000, 999);
+        DB::beginTransaction();
 
         try {
             $validator = Validator::make($request->all(), [
-                'breeding_id' => 'exists:perkawinan,kode_breeding',
-                'birth_date' => 'required|date',
-                'offspring_count' => 'required|int',
-                'photos' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
+                'breeding_id' => 'required|exists:perkawinan,kode_breeding',
+                'offspring_codes' => 'required|array|min:1',
+                'offspring_codes.*' => 'exists:product,kode_product',
                 'notes' => 'nullable|string'
             ]);
-    
+
             if ($validator->fails()) {
                 return response()->json([
                     'message' => 'Failed to add data birth',
                     'error' => $validator->errors()
                 ], 422);
             }
-    
-            $result = $validator->validated();
-            $breed = Breeding::where('kode_breeding', $result['breeding_id'])->firstOrFail();
-            $result['breeding_id'] = $breed->id_breeding;
-    
-            if ($request->hasFile('photos')) {
-                try {
-                    $file = $request->file('photos')->getRealPath();
-                    $cloudinary = new Cloudinary();
-    
-                    $uploadFile = Cloudinary::uploadApi()->upload($file, [
-                        'folder' => 'nusaqu'
-                    ]);
-    
-                    $result["photos"] = $uploadFile['secure_url'];
-                } catch (\Exception $e) {
+
+            // Ambil breeding
+            $breed = Breeding::where('kode_breeding', $request->breeding_id)->firstOrFail();
+
+            // Ambil anak-anak
+            $offsprings = Goats::whereIn('kode_product', $request->offspring_codes)->get();
+
+            // Validasi anak sesuai induk breeding
+            foreach ($offsprings as $goat) {
+                if (
+                    $goat->mother_id !== $breed->female_id ||
+                    $goat->father_id !== $breed->male_id
+                ) {
                     return response()->json([
-                        'message' => 'Failed to upload image to Cloudinary',
-                        'error' => $e->getMessage()
-                    ], 500);
+                        'message' => 'Beberapa anakan tidak sesuai dengan induk breeding'
+                    ], 422);
                 }
             }
-    
-            $birth = Birth::create(array_merge($result, [
-                'kode_kelahiran' => 'BIR-' . $rand_number,
-            ]));
-    
+
+            // Simpan kelahiran
+            $birth = Birth::create([
+                'kode_kelahiran' => 'BIR-' . rand(100,999),
+                'breeding_id' => $breed->id_breeding,
+                'birth_date' => $offsprings->min('birth_date'),
+                'offspring_count' => $offsprings->count(),
+                'notes' => $request->notes
+            ]);
+
+            // Simpan detail anak
+            foreach ($offsprings as $goat) {
+                ItemKelahiran::create([
+                    'kelahiran_id' => $birth->id_kelahiran,
+                    'product_id' => $goat->id_product
+                ]);
+            }
+
+            DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Data kelahiran berhasil ditambahkan.',
-                'data' => $birth
+                'data' => $birth->load([
+                    'breed.female:id_product,kode_product',
+                    'breed.male:id_product,kode_product',
+                    'details.goat:id_product,kode_product,birth_date'
+                ])
             ], 201);
+
         } catch (\Throwable $th) {
+            DB::rollBack();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Data kelahiran gagal ditambahkan.',
-                'data' => $th->getMessage()
+                'error' => $th->getMessage()
             ], 500);
         }
     }
+
+
 
 
     public function show($kode_kelahiran)

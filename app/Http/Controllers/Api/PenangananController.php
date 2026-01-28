@@ -17,7 +17,7 @@ class PenangananController extends Controller
 
     public function index()
     {
-        $penanganan = Penanganan::get();
+        $penanganan = Penanganan::with(['kesehatan','items.obat'])->orderBy('created_at', 'desc')->get();
 
         try {
             return response()->json([

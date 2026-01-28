@@ -17,7 +17,9 @@ class GoatsController extends Controller
 {
     public function index()
     {
-        $goats = Goats::get();
+        $goats = Goats::with('cage')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         try {
             return response()->json([
@@ -36,19 +38,16 @@ class GoatsController extends Controller
 
     public function store(Request $request)
     {
-        
         $FILE_SIZE = 1024 * 5;
-        $rand_number = rand(100, 999);
-
         try {
             $validator = Validator::make($request->all(), [
-                'nama_product' => 'required|string',
+                'kode_product' => 'required|unique:product,kode_product',
                 'jenis_product' => 'required|string',
                 'type_product' => 'required|string',
                 'gender' => 'required|string',
                 'birth_date' => 'nullable|date',
                 'bobot' => 'required|integer',
-                'harga_jual' => 'required|integer',
+                'harga_jual' => 'nullable|integer',
                 'harga_beli' => 'nullable|integer',
                 'photo1' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
                 'photo2' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
@@ -56,7 +55,7 @@ class GoatsController extends Controller
                 'status' => 'required|string',
                 'mother_id' => 'nullable|exists:product,id_product',
                 'father_id' =>'nullable|exists:product,id_product',
-                'users_id' => 'nullable|exists:users,kode_unik',
+                // 'users_id' => 'nullable|exists:users,kode_unik',
                 'kandang_id' => 'nullable|exists:kandang,kode_kandang',
             ]);
     
@@ -69,14 +68,7 @@ class GoatsController extends Controller
     
             $result = $validator->validated();
             $photos = ['photo1','photo2','photo3'];
-            $prefix = $result['jenis_product'] === 'anakan' ? 'AQ' : 'NQ';
-            if (!empty($result['users_id'])) {
-                $users = Users::where('kode_unik', $result['users_id'])->firstOrFail();
-                $result['users_id'] = $users->id_users;
-            } else {
-                $result['users_id'] = null;
-            }
-
+            
             if (!empty($result['kandang_id'])) {
                 $kandang = Cage::where('kode_kandang', $result['kandang_id'])->firstOrFail();
                 $result['kandang_id'] = $kandang->id_kandang;
@@ -104,9 +96,7 @@ class GoatsController extends Controller
                 }
             }
     
-            $goats = goats::create(array_merge($result, [
-                'kode_product' => $prefix . '-' . $rand_number,
-            ]));
+            $goats = goats::create($result);
     
             return response()->json([
                 'success' => true,
@@ -128,7 +118,10 @@ class GoatsController extends Controller
         $goats = Goats::with([
             'children',
             'health',
-            'breedingAsFemale',
+            'mother:id_product,kode_product',
+            'father:id_product,kode_product',
+            'breedingAsFemale.male:id_product,kode_product',
+            'breedingAsFemale.female:id_product,kode_product',
             'timbangan'
         ])
         ->withSum('investments as total_investasi', 'item_investment.jumlah_investasi')
@@ -189,21 +182,20 @@ class GoatsController extends Controller
                 ], 404);
             }
             $validator = Validator::make($request->all(), [
-                    'nama_product' => 'required|string',
+                    'kode_product' => 'nullable|unique:product,kode_product',
                     'jenis_product' => 'required|string',
                     'type_product' => 'required|string',
                     'gender' => 'required|string',
                     'birth_date' => 'nullable|date',
                     'bobot' => 'required|integer',
-                    'harga_jual' => 'required|integer',
+                    'harga_jual' => 'nullable|integer',
                     'harga_beli' => 'nullable|integer',
                     'photo1' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
                     'photo2' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
                     'photo3' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
                     'status' => 'required|string',
-                    'mother_id' => 'nullable|exists:product,kode_product',
-                    'father_id' =>'nullable|exists:product,kode_product',
-                    'users_id' => 'nullable|exists:users,kode_unik',
+                    'mother_id' => 'nullable|exists:product,id_product',
+                    'father_id' =>'nullable|exists:product,id_product',
                     'kandang_id' => 'nullable|exists:kandang,kode_kandang',
             ]);
 
@@ -215,26 +207,33 @@ class GoatsController extends Controller
             }
 
             $result = $validator->validated();
+            $jenis  = strtolower($result['jenis_product']);
+            $gender = strtolower($result['gender']);
 
-            $prefix = $result['jenis_product'] === 'anakan' ? 'AQ' : 'NQ';
-            $oldRand = explode('-', $goats->id_kambing)[1] ?? rand(1000, 9999);
-            $newIdKambing = $prefix . '-' . $oldRand;
-            $users = Users::where('kode_unik', $result['users_id'])->firstOrFail();
-            $kandang = Cage::where('kode_kandang', $result['kandang_id'])->firstOrFail();
-    
-            $result['users_id'] = $users->id_users;
-            $result['kandang_id'] = $kandang->id_kandang;
+            if ($jenis === 'anakan') {
+                $prefix = 'AQ';
+            } else {
+                $prefix = $gender === 'male' ? 'DQ' : 'BQ';
+            }
 
-            if (!empty($result['mother_id'])) {
-                $mother = Goats::where('kode_product', $result['mother_id'])->firstOrFail();
-                $result['mother_id'] = $mother->id_product;
+            $oldKode = $goats->kode_product;
+            if (str_contains($oldKode, '-')) {
+                [$oldPrefix, $number] = explode('-', $oldKode);
+            } else {
+                $number = '001';
+            }
+
+            $needRegenerateKode =
+                strtolower($goats->jenis_product) !== $jenis ||
+                strtolower($goats->gender) !== $gender;
+
+            if ($needRegenerateKode) {
+                $result['kode_product'] = $prefix . '-' . str_pad($number, 3, '0', STR_PAD_LEFT);
             }
             
-            if (!empty($result['father_id'])) {
-                $father = Goats::where('kode_product', $result['father_id'])->firstOrFail();
-                $result['father_id'] = $father->id_product;
-            }
-
+            $kandang = Cage::where('kode_kandang', $result['kandang_id'])->firstOrFail();
+    
+            $result['kandang_id'] = $kandang->id_kandang;
             
             $photos = ['photo1','photo2','photo3'];
             foreach ($photos as $photo) {
@@ -329,66 +328,27 @@ class GoatsController extends Controller
         }
     }
 
-    public function fetchGoatByUser()
+    public function fetchGoatByUser($id_users)
     {
-        try{
-        $userId = Users::id();
-
-        $goats = Goats::where('kode_unik', $userId)
-            ->with([
-                'cage',
-                'users',
-            ])
-            ->get()
-            ->map(function($goat) {
-                return [
-                    'kode_product' => $goat->kode_product,
-                    'nama_product' => $goat->nama_product,
-                    'jenis_product' => $goat->jenis_product,
-                    'type_product' => $goat->type_product,
-                    'gender' => $goat->gender,
-                    'birth_date' => $goat->birth_date,
-                    'bobot' => $goat->bobot,
-                    'harga_jual' => $goat->harga_jual,
-                    'harga_beli' => $goat->harga_beli,
-                    'status' => $goat->status,
-                    'image' => $goat->photo1, // Main photo
-                        'images' => [
-                            $goat->photo1,
-                            $goat->photo2,
-                            $goat->photo3
-                        ],
-                    'cage' => $goat->cage ? [
-                        'id_kandang' => $goat->cage->kode_kandang,
-                        'nama_kandang' => $goat->cage->nama_kandang,
-                    ] : null,
-                    'mother' => $goat->mother ? [
-                            'id' => $goat->mother->id_product,
-                            'name' => $goat->mother->nama_product,
-                            'code' => $goat->mother->kode_product
-                    ] : null,
-                        'father' => $goat->father ? [
-                            'id' => $goat->father->id_product,
-                            'name' => $goat->father->nama_product,
-                            'code' => $goat->father->kode_product
-                    ] : null,
-                        ];
-            });
-
+        try {
+            $goats = Goats::whereHas('investments', function ($q) use ($id_users) {
+                $q->where('users_id', $id_users);
+            })
+            ->get();
+    
             return response()->json([
                 'success' => true,
-                'message' => 'Data kambing berhasil diambil',
-                'data' => $goats,
-                'total' => $goats->count()
+                'data' => $goats
             ], 200);
-        } catch (\Exception $e) {
+        } catch (\Throwable $th) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data kambing',
-                'error' => $e->getMessage()
+                'message' => 'Gagal mengambil data kambing.',
+                'data' => $th->getMessage()
             ], 500);
         }
     }
+
     
     public function getDashboardStats($userId)
     {
@@ -445,7 +405,7 @@ class GoatsController extends Controller
             'data' => $items->map(function ($item) {
                 return [
                     'id_product' => $item->product->id_product,
-                    'nama_product' => $item->product->nama_product,
+                    'kode_product' => $item->product->kode_product,
                     'type_product' => $item->product->type_product,
                     'jumlah_investasi' => $item->jumlah_investasi,
                 ];

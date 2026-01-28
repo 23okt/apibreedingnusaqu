@@ -13,25 +13,26 @@ class CageController extends Controller
 
     public function index(Request $request)
     {
-        $cage_id = $request->query('id_kandang');
-
-        if($cage_id){
-            $cage = Cage::where('id_kandang',$cage_id)->get();
-        }else{
-            $cage = Cage::get();
-        }
-
         try {
+            $cage = Cage::withCount('goats')->get();
+
+            $cage->transform(function ($item) {
+                $item->jumlah_kambing = $item->goats_count;
+                unset($item->goats_count);
+                return $item;
+            });
+
             return response()->json([
                 'success' => true,
                 'message' => 'Success menampilkan data kandang',
                 'data' => $cage
             ], 200);
+
         } catch (\Throwable $th) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menampilkan data kandang',
-                'data' => $th
+                'data' => $th->getMessage()
             ], 500);
         }
     }
@@ -45,7 +46,6 @@ class CageController extends Controller
             $validator = Validator::make($request->all(), [
                 'nama_kandang' => 'required|string|min:1',
                 'type_kandang' => 'required|string',
-                'jumlah_kambing' => 'required|integer',
                 'lokasi' => 'required|string|min:1'
             ]);
     
@@ -59,6 +59,7 @@ class CageController extends Controller
             $result = $validator->validated();
             $cage = Cage::create(array_merge($result, [
                 'kode_kandang' => 'CAGE-' . $rand_number,
+                'jumlah_kambing' => 0,
             ]));
 
             return response()->json([

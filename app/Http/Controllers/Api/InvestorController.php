@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Users;
 use App\Models\Goats;
+use App\Models\Investment;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\ItemInvestasi;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -18,7 +20,7 @@ class InvestorController extends Controller
 
     public function index(Request $request)
     {
-        $users = Users::where('role', 'customer')->get();
+        $users = Users::where('role', 'customer')->orderBy('created_at','desc')->get();
 
         try {
             return response()->json([
@@ -40,8 +42,7 @@ class InvestorController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'nama_users' => 'required|string',
-                'alamat' => 'required|string',
-                'no_telp' => 'required|string',
+                'no_telp' => 'required|string|unique:users,no_telp',
             ]);
 
             if ($validator->fails()) {
@@ -179,45 +180,45 @@ class InvestorController extends Controller
         }
     }
 
-    public function products($id_users)
-    {
-        $products = Goats::whereHas('investments', function ($q) use ($id_users) {
-            $q->where('users_id', $id_users);
-        })
-        ->with([
-            'health',
-            'breedingAsFemale',
-            'investments' => function ($q) use ($id_users) {
-                $q->where('users_id', $id_users)
-                    ->select('investasi.id_investasi');
-            }
-        ])
-        ->get()
-        ->map(function ($product) {
-            return [
-                'id_product' => $product->id_product,
-                'kode_product' => $product->kode_product,
-                'jenis_product' => $product->jenis_product,
-                'type_product' => $product->type_product,
-                'nama_product' => $product->nama_product,
-                'gender' => $product->gender,
-                'bobot' => $product->bobot,
-                'status' => $product->status,
-                'photo1' => $product->photo1,
-                'photo2' => $product->photo2,
-                'photo3' => $product->photo3,
+    // public function products($id_users)
+    // {
+    //     $products = Goats::whereHas('investments', function ($q) use ($id_users) {
+    //         $q->where('users_id', $id_users);
+    //     })
+    //     ->with([
+    //         'health',
+    //         'breedingAsFemale',
+    //         'investments' => function ($q) use ($id_users) {
+    //             $q->where('users_id', $id_users)
+    //                 ->select('investasi.id_investasi');
+    //         }
+    //     ])
+    //     ->get()
+    //     ->map(function ($product) {
+    //         return [
+    //             'id_product' => $product->id_product,
+    //             'kode_product' => $product->kode_product,
+    //             'jenis_product' => $product->jenis_product,
+    //             'type_product' => $product->type_product,
+    //             'nama_product' => $product->nama_product,
+    //             'gender' => $product->gender,
+    //             'bobot' => $product->bobot,
+    //             'status' => $product->status,
+    //             'photo1' => $product->photo1,
+    //             'photo2' => $product->photo2,
+    //             'photo3' => $product->photo3,
 
-                'total_investasi' => $product->investments->sum(
-                    fn ($inv) => $inv->pivot->jumlah_investasi
-                ),
-            ];
-        });
+    //             'total_investasi' => $product->investments->sum(
+    //                 fn ($inv) => $inv->pivot->jumlah_investasi
+    //             ),
+    //         ];
+    //     });
 
-        return response()->json([
-            'success' => true,
-            'data' => $products
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => $products
+    //     ]);
+    // }
 
 
     public function AddProduct(Request $request)
@@ -269,5 +270,18 @@ class InvestorController extends Controller
                 'data' => $th->getMessage()
             ], 500);
         }
+    }
+
+    public function kuitansi($kode)
+    {
+        $invest = Investment::with('users')
+            ->where('kode_investasi', $kode)
+            ->firstOrFail();
+
+        $pdf = Pdf::loadView('kuitansi', [
+            'invest' => $invest
+        ])->setPaper('a4');
+
+        return $pdf->stream('kuitansi-'.$kode.'.pdf');
     }
 }

@@ -16,7 +16,7 @@ class Breeding extends Model
     protected $table = 'perkawinan';
     protected $primaryKey = 'id_breeding';
 
-    protected $fillable = ['id_breeding','kode_breeding','female_id', 'male_id','tanggal_perkiraan_lahir','status','photo1','photo2','photo3', 'notes'];
+    protected $fillable = ['id_breeding','kode_breeding','female_id', 'male_id','tanggal_pkb','status','notes'];
 
     public function pregnant()
     {

@@ -14,6 +14,6 @@ class Timbangan extends Model
 
     public function goats(): BelongsTo
     {
-        return $this->belongsTo(Goats::class);
+        return $this->belongsTo(Goats::class, 'product_id', 'id_product');
     }
 }

@@ -39,7 +39,7 @@ Route::prefix('v1')->group(function() {
         ->middleware('auth:api','checkuser:admin');
 
     Route::post('/invest/products', [InvestorController::class, 'AddProduct']);
-    Route::get('/mitra/{kode_unik}/products', [InvestorController::class, 'products']);
+    Route::get('/mitra/{id_users}/products', [GoatsController::class, 'fetchGoatByUser']);
 
     
     Route::middleware(['auth:api', 'checkuser:admin'])
@@ -54,6 +54,9 @@ Route::prefix('v1')->group(function() {
     Route::apiResource('investment', InvestmentController::class);
     Route::get('/product/recent', [GoatsController::class, 'recentSales']);
     Route::get('/product/best', [GoatsController::class, 'bestSelling']);
+    
+    Route::get('/invest/{kode}/kuitansi', [InvestorController::class, 'kuitansi']);
+
 
 
     Route::middleware(['auth:api'])->group(function () {

@@ -16,11 +16,11 @@ class UsersSeeder extends Seeder
     public function run(): void
     {
         DB::table('users')->insert([
-            'kode_unik' => 'ADM-1011',
+            'kode_unik' => 'ADM-2026',
             'nama_users' => 'admin',
             'pass_users' => Hash::make('password'),
             'alamat' => null,
-            'no_telp' => null,
+            'no_telp' => '08123456789',
             'role' => 'admin',
             'status' => 'active',
             'created_at' => now(),

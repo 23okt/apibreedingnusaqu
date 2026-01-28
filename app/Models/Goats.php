@@ -17,11 +17,11 @@ class Goats extends Model
     protected $table = 'product';
     protected $primaryKey = 'id_product';
 
-    protected $fillable = ['id_product','kode_product','nama_product', 'jenis_product','type_product', 'gender', 'birth_date', 'harga_jual','harga_beli','bobot', 'photo1','photo2','photo3','status', 'mother_id', 'father_id', 'users_id', 'kandang_id'];
+    protected $fillable = ['id_product','kode_product', 'jenis_product','type_product', 'gender', 'birth_date', 'harga_jual','harga_beli','bobot', 'photo1','photo2','photo3','status', 'mother_id', 'father_id', 'users_id', 'kandang_id'];
 
     public function cage()
     {
-        return $this->belongsTo(Cage::class. 'kandang_id', 'id_kandang');
+        return $this->belongsTo(Cage::class, 'kandang_id', 'id_kandang');
     }
 
     public function users()
@@ -65,6 +65,7 @@ class Goats extends Model
             ->orderByDesc('check_date');
     }
 
+    //Relasi ke Data Investasi
     public function investments()
     {
         return $this->belongsToMany(
@@ -81,4 +82,23 @@ class Goats extends Model
             ->selectRaw('SUM(item_investment.jumlah_investasi) as total')
             ->value('total');
     }
+
+    //Relasi ke Data Kelahiran
+    public function birthDetail()
+    {
+        return $this->hasOne(ItemKelahiran::class, 'product_id', 'id_product');
+    }
+
+    public function birth()
+    {
+        return $this->hasOneThrough(
+            Birth::class,
+            ItemKelahiran::class,
+            'product_id',
+            'id_kelahiran',
+            'id_product',
+            'kelahiran_id'
+        );
+    }
+
 }

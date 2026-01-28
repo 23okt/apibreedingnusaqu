@@ -13,7 +13,11 @@ class Investment extends Model
     protected $table = 'investasi';
     protected $primaryKey = 'id_investasi';
 
-    protected $fillable = ['id_investasi','kode_investasi','users_id','jumlah_inves', 'jumlah_inves_terbilang','metode_pembayaran','bukti_pembayaran','tanggal_investasi','status','description'];
+    protected $fillable = ['id_investasi','kode_investasi','users_id','jumlah_inves', 'jumlah_inves_terbilang','metode_pembayaran','tanggal_investasi','status','description', 'bukti_pembayaran'];
+
+    protected $casts = [
+        'tanggal_investasi' => 'date',
+    ];
 
     public function users()
     {

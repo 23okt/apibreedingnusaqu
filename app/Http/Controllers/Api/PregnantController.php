@@ -13,7 +13,13 @@ class PregnantController extends Controller
 {
     public function index()
     {
-        $pregnant = Pregnant::get();
+        $pregnant = Pregnant::with([
+            'breed',
+            'breed.female:id_product,kode_product',
+            'breed.male:id_product,kode_product'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         try {
             return response()->json([
@@ -38,10 +44,10 @@ class PregnantController extends Controller
 
         try {
             $validator = Validator::make($request->all(), [
-                'breeding_id' => 'string|exists:perkawinan,kode_breeding',
+                'breeding_id' => 'string|exists:perkawinan,id_breeding',
                 'check_date' => 'required|date',
                 'status' => 'required|string',
-                'photos' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
+                // 'photos' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
                 'notes' => 'nullable|string'
             ]);
     
@@ -54,26 +60,24 @@ class PregnantController extends Controller
             }
             
             $result = $validator->validated();
-            $breed = Breeding::where('kode_breeding', $result['breeding_id'])->firstOrFail();
-            $result['breeding_id'] = $breed->id_breeding;
             
-                if ($request->hasFile('photos')) {
-                    try {
-                        $file = $request->file('photos')->getRealPath();
-                        $cloudinary = new Cloudinary();
+            //     if ($request->hasFile('photos')) {
+            //         try {
+            //             $file = $request->file('photos')->getRealPath();
+            //             $cloudinary = new Cloudinary();
         
-                        $uploadFile = Cloudinary::uploadApi()->upload($file, [
-                            'folder' => 'nusaqu'
-                        ]);
+            //             $uploadFile = Cloudinary::uploadApi()->upload($file, [
+            //                 'folder' => 'nusaqu'
+            //             ]);
         
-                        $result["photos"] = $uploadFile['secure_url'];
-                    } catch (\Exception $e) {
-                        return response()->json([
-                            'message' => 'Failed to upload image to Cloudinary',
-                            'error' => $e->getMessage()
-                        ], 500);
-                    }
-            }
+            //             $result["photos"] = $uploadFile['secure_url'];
+            //         } catch (\Exception $e) {
+            //             return response()->json([
+            //                 'message' => 'Failed to upload image to Cloudinary',
+            //                 'error' => $e->getMessage()
+            //             ], 500);
+            //         }
+            // }
     
             $pregnant = pregnant::create(array_merge($result, [
                 'kode_kehamilan' => 'PRE-' . $rand_number,
@@ -96,7 +100,9 @@ class PregnantController extends Controller
 
     public function show($kode_kehamilan)
     {
-        $pregnant = Pregnant::where('kode_kehamilan',$kode_kehamilan)->first();
+        $pregnant = Pregnant::where('kode_kehamilan',$kode_kehamilan)
+        ->with('breed','breed.female:id_product,kode_product','breed.male:id_product,kode_product')
+        ->first();
 
         try {
             if (!$pregnant) {
@@ -136,36 +142,36 @@ class PregnantController extends Controller
                 'breeding_id' => 'required|exists:perkawinan,id_breeding',
                 'check_date' => 'required|date',
                 'status' => 'required|string',
-                'photos' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
+                // 'photos' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
                 'notes' => 'nullable|string'
             ]);
 
-            if ($request->hasFile('photos')) {
-                //Hapus photo lama di Cloudinary
-                    if (!empty($pregnant->photos)) {
-                        try {
-                            $publicId = $this->getPublicIdFromCloudinaryUrl($pregnant->photos);
-                            Cloudinary::uploadApi()->destroy($publicId);
-                        } catch (\Throwable $th) {
-                            return $th->getMessage();
-                        }
-                    }
-                try {
-                    $file = $request->file('photos')->getRealPath();
-                    $cloudinary = new Cloudinary();
+            // if ($request->hasFile('photos')) {
+            //     //Hapus photo lama di Cloudinary
+            //         if (!empty($pregnant->photos)) {
+            //             try {
+            //                 $publicId = $this->getPublicIdFromCloudinaryUrl($pregnant->photos);
+            //                 Cloudinary::uploadApi()->destroy($publicId);
+            //             } catch (\Throwable $th) {
+            //                 return $th->getMessage();
+            //             }
+            //         }
+            //     try {
+            //         $file = $request->file('photos')->getRealPath();
+            //         $cloudinary = new Cloudinary();
     
-                    $uploadFile = Cloudinary::uploadApi()->upload($file, [
-                        'folder' => 'nusaqu'
-                    ]);
+            //         $uploadFile = Cloudinary::uploadApi()->upload($file, [
+            //             'folder' => 'nusaqu'
+            //         ]);
     
-                    $validated["photos"] = $uploadFile['secure_url'];
-                } catch (\Exception $e) {
-                    return response()->json([
-                        'message' => 'Failed to upload image to Cloudinary',
-                        'error' => $e->getMessage()
-                    ], 500);
-                }
-            }
+            //         $validated["photos"] = $uploadFile['secure_url'];
+            //     } catch (\Exception $e) {
+            //         return response()->json([
+            //             'message' => 'Failed to upload image to Cloudinary',
+            //             'error' => $e->getMessage()
+            //         ], 500);
+            //     }
+            // }
 
             $pregnant->update($validated);
             return response()->json([

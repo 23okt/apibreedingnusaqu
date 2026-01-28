@@ -20,6 +20,6 @@ class Cage extends Model
 
     public function goats(): HasMany
     {
-        return $this->hasMany(Goats::class);
+        return $this->hasMany(Goats::class, 'kandang_id', 'id_kandang');
     }
 }

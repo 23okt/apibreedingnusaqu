@@ -46,12 +46,12 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'nama_users' => 'required|string',
+            'no_telp' => 'required',
             'pass_users' => 'required|string',
         ]);
 
         // Cek user berdasarkan username
-        $user = Users::where('nama_users', $request->nama_users)->first();
+        $user = Users::where('no_telp', $request->no_telp)->first();
 
         if (!$user) {
             return response()->json([

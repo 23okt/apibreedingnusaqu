@@ -13,7 +13,11 @@ class BreedingController extends Controller
 {
     public function index()
     {
-        $breeding = Breeding::get();
+        $breeding = Breeding::with(
+            'female:id_product,kode_product,type_product',
+            'male:id_product,kode_product,type_product'
+        )->orderBy('created_at','desc')
+        ->get();
 
         try {
             return response()->json([
@@ -32,18 +36,15 @@ class BreedingController extends Controller
 
     public function store(Request $request)
     {
-        $FILE_SIZE = 1024 * 5;
+        // $FILE_SIZE = 1024 * 5;
         $rand_number = rand(000,999);
 
         try {
             $validator = Validator::make($request->all(), [
-                'female_id' => 'required|string|exists:product,kode_product',
-                'male_id' => 'string|exists:product,kode_product',
-                'tanggal_perkiraan_lahir' => 'required|date|min:1',
+                'female_id' => 'required|string|exists:product,id_product',
+                'male_id' => 'string|exists:product,id_product',
+                'tanggal_pkb' => 'required|date|min:1',
                 'status' => 'required|string|min:1',
-                'photo1' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
-                'photo2' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
-                'photo3' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
                 'notes' => 'nullable|string'
             ]);
     
@@ -56,35 +57,6 @@ class BreedingController extends Controller
             }
     
             $result = $validator->validated();
-            $mother = Goats::where('kode_product', $result['female_id'])->firstOrFail();
-            $father = Goats::where('kode_product', $result['male_id'])->firstOrFail();
-
-            $result['female_id'] = $mother->id_product;
-            $result['male_id'] = $father->id_product;
-            // ==============================
-            // HANDLE FOTO CLOUDINARY
-            // ==============================
-            
-            $photos = ['photo1','photo2','photo3'];
-            foreach ($photos as $photo) {
-                if ($request->hasFile($photo)) {
-                    try {
-                        $file = $request->file($photo)->getRealPath();
-                        $cloudinary = new Cloudinary();
-        
-                        $uploadFile = Cloudinary::uploadApi()->upload($file, [
-                            'folder' => 'nusaqu'
-                        ]);
-        
-                        $result[$photo] = $uploadFile['secure_url'];
-                    } catch (\Exception $e) {
-                        return response()->json([
-                            'message' => 'Failed to upload image to Cloudinary',
-                            'error' => $e->getMessage()
-                        ], 500);
-                    }
-                }
-            }
     
             $breeding = Breeding::create(array_merge($result,[
                 'kode_breeding' => 'BRE-' . $rand_number,
@@ -109,8 +81,8 @@ class BreedingController extends Controller
         $breeding = Breeding::with([
             'pregnant',
             'birth',
-            'female:id_product,kode_product,nama_product',
-            'male:id_product,kode_product,nama_product'
+            'female:id_product,kode_product,type_product',
+            'male:id_product,kode_product,type_product'
         ])
         ->where('kode_breeding', $kode_breeding)
         ->first();
@@ -139,7 +111,6 @@ class BreedingController extends Controller
 
     public function update(Request $request, string $kode_breeding)
     {
-        $FILE_SIZE = 1024 * 5;
         $breeding = Breeding::where('kode_breeding', $kode_breeding)->first();
 
         try {
@@ -152,41 +123,11 @@ class BreedingController extends Controller
             $validated = $request->validate([
                 'female_id' => 'required|string|exists:product,id_product',
                 'male_id' => 'string|exists:product,id_product',
-                'tanggal_perkiraan_lahir' => 'required|date|min:1',
+                'tanggal_pkb' => 'required|date|min:1',
                 'status' => 'required|string|min:1',
-                'photo1' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
-                'photo2' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
-                'photo3' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
                 'notes' => 'nullable|string'
             ]);
 
-            $photos = ['photo1','photo2','photo3'];
-                    
-            foreach ($photos as $p ) {
-                if (!$request->hasFile($p)) {
-                    continue;
-                }
-
-                if (!empty($breeding[$p])) {
-                    $publicId = $this->getPublicIdFromCloudinaryUrl($breeding[$p]);
-                    Cloudinary::uploadApi()->destroy($publicId);
-                }
-                
-                try {
-                    $file = $request->file($p)->getRealPath();
-                    $upload = Cloudinary::uploadApi()->upload($file, [
-                        "folder" => "nusaqu"
-                    ]);
-                    $validated[$p] = $upload['secure_url'];
-                } catch (\Throwable $th) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Gagal upload photo ke Cloudinary",
-                        'error' => $th->getMessage()
-                    ], 500);
-                }
-            }
-            
             $breeding->update($validated);
             return response([
                 'message' => 'Data Perkawinan berhasil diubah.',

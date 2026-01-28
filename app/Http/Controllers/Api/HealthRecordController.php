@@ -14,7 +14,7 @@ class HealthRecordController extends Controller
     //Untuk mendapatkan semua data kesehatan
     public function index()
     {
-        $health = HealthRecord::with('product')->get();
+        $health = HealthRecord::with('product')->orderBy('created_at', 'desc')->get();
 
         try {
             return response()->json([
@@ -101,8 +101,8 @@ class HealthRecordController extends Controller
     {
         try {
             $health = HealthRecord::with([
-                'product:id_product,nama_product,kode_product',
-                'penanganan.items'
+                'product:id_product,kode_product,type_product,status',
+                'penanganan.items.obat'
             ])->where('kode_kesehatan',$kode_kesehatan)->first();
     
             if (!$health) {
