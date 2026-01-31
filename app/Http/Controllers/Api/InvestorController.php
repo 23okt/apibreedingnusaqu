@@ -120,7 +120,7 @@ class InvestorController extends Controller
                 'nama_users' => 'sometimes|required|string',
                 'pass_users' => 'sometimes|required|string',
                 'alamat' => 'sometimes|required|string',
-                'no_telp' => 'sometimes|required|string',
+                'no_telp' => 'required|string|unique:users,no_telp',
             ]);
 
             if ($validator->fails()) {
