@@ -43,6 +43,9 @@ class InvestorController extends Controller
             $validator = Validator::make($request->all(), [
                 'nama_users' => 'required|string',
                 'no_telp' => 'required|string|unique:users,no_telp',
+            ],[
+                'no_telp.unique' => 'Nomor telepon sudah digunakan, silakan gunakan nomor lain.',
+                'no_telp.required' => 'Nomor telepon wajib diisi.',
             ]);
 
             if ($validator->fails()) {
@@ -117,7 +120,7 @@ class InvestorController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'nama_users' => 'sometimes|required|string',
+                'nama_  users' => 'sometimes|required|string',
                 'pass_users' => 'sometimes|required|string',
                 'alamat' => 'sometimes|required|string',
                 'no_telp' => 'required|string|unique:users,no_telp',
