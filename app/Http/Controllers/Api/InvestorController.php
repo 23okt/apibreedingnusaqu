@@ -43,18 +43,24 @@ class InvestorController extends Controller
             $validator = Validator::make($request->all(), [
                 'nama_users' => 'required|string',
                 'no_telp' => 'required|string|unique:users,no_telp',
-            ],[
-                'no_telp.unique' => 'Nomor telepon sudah digunakan, silakan gunakan nomor lain.',
-                'no_telp.required' => 'Nomor telepon wajib diisi.',
             ]);
 
             if ($validator->fails()) {
+                if ($validator->errors()->has('no_telp')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Nomor telepon sudah terdaftar',
+                        'errors' => $validator->errors()->get('no_telp')
+                    ], 422);
+                }
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Gagal Menambahkan Users.',
-                    'error' => $validator->errors()
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
                 ], 422);
             }
+
 
             $result = $validator->validated();
     
