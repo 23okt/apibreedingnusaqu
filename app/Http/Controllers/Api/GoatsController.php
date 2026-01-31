@@ -351,44 +351,62 @@ class GoatsController extends Controller
 
     
     public function getDashboardStats($userId)
-    {
-        try {
+{
+    try {
+        $totalDomba = DB::table('item_investment')
+            ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
+            ->where('investasi.users_id', $userId)
+            ->distinct()
+            ->count('item_investment.product_id');
 
-            $totalDomba = DB::table('item_investment')
-                ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
-                ->where('investasi.users_id', $userId)
-                ->distinct('item_investment.product_id')
-                ->count('item_investment.product_id');
+        $totalAnakan = DB::table('item_investment')
+            ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
+            ->join('product', 'product.id_product', '=', 'item_investment.product_id')
+            ->where('investasi.users_id', $userId)
+            ->where('product.jenis_product', 'anakan')
+            ->distinct()
+            ->count('product.id_product');
 
-            $totalAnakan = Goats::where('users_id', $userId)
-                ->where('jenis_product', 'anakan')
-                ->count();
+        $totalInvestasi = DB::table('investasi')
+            ->where('users_id', $userId)
+            ->count();
 
-            $aktifBreeding = Goats::where('users_id', $userId)
-                ->where('jenis_product', 'indukan')
-                ->whereHas('breedingAsFemale', function ($q) {
-                    $q->where('status', 'pregnant');
-                })
-                ->count();
+        $totalNominalInvestasi = DB::table('item_investment')
+            ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
+            ->where('investasi.users_id', $userId)
+            ->sum('item_investment.jumlah_investasi');
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Dashboard stats berhasil diambil',
-                'data' => [
-                    'total_domba'    => $totalDomba,
-                    'total_anakan'   => $totalAnakan,
-                    'aktif_breeding' => $aktifBreeding,
-                ]
-            ], 200);
+        $aktifBreeding = DB::table('product')
+            ->join('item_investment', 'item_investment.product_id', '=', 'product.id_product')
+            ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
+            ->join('breeding', 'breeding.female_id', '=', 'product.id_product')
+            ->where('investasi.users_id', $userId)
+            ->where('product.jenis_product', 'indukan')
+            ->where('breeding.status', 'pregnant')
+            ->distinct()
+            ->count('product.id_product');
 
-        } catch (\Throwable $th) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil dashboard stats',
-                'data' => $th->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Dashboard stats berhasil diambil',
+            'data' => [
+                'total_domba'            => $totalDomba,
+                'total_anakan'           => $totalAnakan,
+                'total_investasi'        => $totalInvestasi,
+                'total_nominal_investasi'=> $totalNominalInvestasi,
+                'aktif_breeding'         => $aktifBreeding,
+            ]
+        ], 200);
+
+    } catch (\Throwable $th) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil dashboard stats',
+            'data' => $th->getMessage(),
+        ], 500);
     }
+}
+
 
 
     public function recentSales()
