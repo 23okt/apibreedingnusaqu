@@ -126,7 +126,7 @@ class InvestorController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'nama_  users' => 'sometimes|required|string',
+                'nama_users' => 'sometimes|required|string',
                 'pass_users' => 'sometimes|required|string',
                 'alamat' => 'sometimes|required|string',
                 'no_telp' => 'required|string|unique:users,no_telp',
