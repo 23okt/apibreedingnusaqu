@@ -13,7 +13,7 @@ class Users extends Authenticatable implements JWTSubject
 {
     use HasFactory;
 
-    protected $keyType = 'string';
+    protected $keyType = 'int';
     protected $primaryKey = 'id_users';
     protected $fillable = ['id_users','kode_unik','nama_users', 'pass_users','alamat','no_telp','role','status'];
 

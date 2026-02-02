@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Users;
 use App\Models\Goats;
+use Illuminate\Validation\Rule;
 use App\Models\Investment;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\ItemInvestasi;
@@ -115,7 +116,9 @@ class InvestorController extends Controller
     public function update(Request $request, $kode_unik)
     {
         try {
-            $users = Users::where('kode_unik', $kode_unik)->where('role', 'customer')->first();
+            $users = Users::where('kode_unik', $kode_unik)
+                ->where('role', 'customer')
+                ->first();
 
             if (!$users) {
                 return response()->json([
@@ -125,23 +128,45 @@ class InvestorController extends Controller
                 ], 404);
             }
 
-            $validator = Validator::make($request->all(), [
+            // ===============================
+            // RULE DASAR
+            // ===============================
+            $rules = [
                 'nama_users' => 'sometimes|required|string',
                 'pass_users' => 'sometimes|required|string',
-                'alamat' => 'sometimes|required|string',
-                'no_telp' => 'required|string|unique:users,no_telp',
-            ]);
+                'alamat'     => 'sometimes|nullable|string',
+            ];
+
+            // ===============================
+            // VALIDASI no_telp HANYA JIKA BERUBAH
+            // ===============================
+            if (
+                $request->filled('no_telp') &&
+                $request->no_telp !== $users->no_telp
+            ) {
+                $rules['no_telp'] = [
+                    'string',
+                    Rule::unique('users', 'no_telp')
+                        ->ignore($users->id_users, 'id_users'),
+                ];
+            }
+
+            $validator = Validator::make($request->all(), $rules);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Validasi data gagal.',
-                    'error' => $validator->errors()
+                    'error'   => $validator->errors()
                 ], 422);
             }
 
+            // ===============================
+            // DATA FINAL
+            // ===============================
             $data = $validator->validated();
 
+            // HASH PASSWORD JIKA ADA
             if (isset($data['pass_users'])) {
                 $data['pass_users'] = Hash::make($data['pass_users']);
             }
@@ -151,16 +176,18 @@ class InvestorController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data mitra berhasil diperbarui.',
-                'data' => $users
+                'data'    => $users
             ], 200);
+
         } catch (\Throwable $th) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memperbarui data mitra.',
-                'data' => $th->getMessage()
+                'data'    => $th->getMessage()
             ], 500);
         }
     }
+
 
     public function destroy($kode_unik)
     {
