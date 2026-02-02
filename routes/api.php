@@ -122,5 +122,6 @@ Route::prefix('v1')->group(function() {
     // Route::get('/product/mothers', [GoatsController::class, 'getOnlyFatherId']);
     // Route::get('/product/fathers', [GoatsController::class, 'getOnlyMotherId']);
     Route::apiResource('timbangan', TimbanganController::class);
+    Route::get('/riwayat/{users_id}', [InvestmentController::class, 'getRiwayatInvestasi']);
     
 });

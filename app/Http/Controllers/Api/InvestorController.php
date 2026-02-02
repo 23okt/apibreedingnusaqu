@@ -189,75 +189,55 @@ class InvestorController extends Controller
         }
     }
 
-    // public function products($id_users)
-    // {
-    //     $products = Goats::whereHas('investments', function ($q) use ($id_users) {
-    //         $q->where('users_id', $id_users);
-    //     })
-    //     ->with([
-    //         'health',
-    //         'breedingAsFemale',
-    //         'investments' => function ($q) use ($id_users) {
-    //             $q->where('users_id', $id_users)
-    //                 ->select('investasi.id_investasi');
-    //         }
-    //     ])
-    //     ->get()
-    //     ->map(function ($product) {
-    //         return [
-    //             'id_product' => $product->id_product,
-    //             'kode_product' => $product->kode_product,
-    //             'jenis_product' => $product->jenis_product,
-    //             'type_product' => $product->type_product,
-    //             'nama_product' => $product->nama_product,
-    //             'gender' => $product->gender,
-    //             'bobot' => $product->bobot,
-    //             'status' => $product->status,
-    //             'photo1' => $product->photo1,
-    //             'photo2' => $product->photo2,
-    //             'photo3' => $product->photo3,
-
-    //             'total_investasi' => $product->investments->sum(
-    //                 fn ($inv) => $inv->pivot->jumlah_investasi
-    //             ),
-    //         ];
-    //     });
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'data' => $products
-    //     ]);
-    // }
-
 
     public function AddProduct(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
                 'investasi_id' => 'required|exists:investasi,id_investasi',
-                'product_id' => 'required|exists:product,id_product',
-                'jumlah_investasi' => 'required|integer',
+                'products' => 'required|array|min:1',
+                'products.*.product_id' => 'required|exists:product,id_product',
+                'products.*.jumlah_investasi' => 'required|integer|min:1',
+            ], [
+                'products.required' => 'Minimal harus ada 1 produk',
+                'products.*.product_id.required' => 'Product ID harus diisi',
+                'products.*.product_id.exists' => 'Product tidak ditemukan',
+                'products.*.jumlah_investasi.required' => 'Jumlah investasi harus diisi',
+                'products.*.jumlah_investasi.integer' => 'Jumlah investasi harus berupa angka',
             ]);
 
             if($validator->fails()){
                 return response()->json([
                     'message' => 'Failed to add data investasi',
-                    'error' => $validator->errors()
+                    'errors' => $validator->errors()
                 ], 422);
             }
 
-            $result = $validator->validated();
-            $item = ItemInvestasi::create($result);
+            $validated = $validator->validated();
+            $items = [];
+
+            // Loop through products and create item investasi
+            foreach ($validated['products'] as $product) {
+                $item = ItemInvestasi::create([
+                    'investasi_id' => $validated['investasi_id'],
+                    'product_id' => $product['product_id'],
+                    'jumlah_investasi' => $product['jumlah_investasi'],
+                ]);
+                $items[] = $item;
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Data Item Investasi berhasil di tambahkan',
-                'data' => $item
+                'message' => 'Data Item Investasi berhasil ditambahkan',
+                'data' => $items,
+                'total' => count($items)
             ], 201);
+            
         } catch (\Throwable $th) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data Item Investasi gagal ditambahkan',
-                'data' => $th->getMessage()
+                'error' => $th->getMessage()
             ], 500);
         }
     }

@@ -367,22 +367,13 @@ class GoatsController extends Controller
             ->distinct()
             ->count('product.id_product');
 
-        $totalInvestasi = DB::table('investasi')
-            ->where('users_id', $userId)
-            ->count();
-
-        $totalNominalInvestasi = DB::table('item_investment')
-            ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
-            ->where('investasi.users_id', $userId)
-            ->sum('item_investment.jumlah_investasi');
-
         $aktifBreeding = DB::table('product')
             ->join('item_investment', 'item_investment.product_id', '=', 'product.id_product')
             ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
-            ->join('breeding', 'breeding.female_id', '=', 'product.id_product')
+            ->join('perkawinan', 'perkawinan.female_id', '=', 'product.id_product')
             ->where('investasi.users_id', $userId)
             ->where('product.jenis_product', 'indukan')
-            ->where('breeding.status', 'pregnant')
+            ->where('perkawinan.status', 'Proses')
             ->distinct()
             ->count('product.id_product');
 
@@ -392,8 +383,6 @@ class GoatsController extends Controller
             'data' => [
                 'total_domba'            => $totalDomba,
                 'total_anakan'           => $totalAnakan,
-                'total_investasi'        => $totalInvestasi,
-                'total_nominal_investasi'=> $totalNominalInvestasi,
                 'aktif_breeding'         => $aktifBreeding,
             ]
         ], 200);

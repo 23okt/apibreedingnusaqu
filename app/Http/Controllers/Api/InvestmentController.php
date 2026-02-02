@@ -110,7 +110,7 @@ class InvestmentController extends Controller
     public function show($kode_investasi)
     {
         try {
-            $investment = Investment::with(['users', 'products'])
+            $investment = Investment::with(['users', 'products.children'])
                 ->where('kode_investasi', $kode_investasi)
                 ->first();
 
@@ -125,42 +125,64 @@ class InvestmentController extends Controller
 
             $totalCustomerShare = 0;
             $totalProfitBersih  = 0;
+            $totalProyeksiKeuntungan = 0;
+
+            $investment->products->transform(function ($product) use (
+            $feeMarketing,
+            &$totalCustomerShare,
+            &$totalProfitBersih,
+            &$totalProyeksiKeuntungan
+        ) {
 
             // ===============================
-            // PRODUCT FINANCE (PER ITEM)
+            // INDUKAN
             // ===============================
-            $investment->products->transform(function ($product) use (
-                $feeMarketing,
-                &$totalCustomerShare,
-                &$totalProfitBersih
-            ) {
-                $hargaBeli = (int) ($product->harga_beli ?? 0);
-                $hargaJual = (int) ($product->harga_jual ?? 0);
+            if ($product->status === 'Terjual') {
+                $hargaJual = (int) $product->harga_jual;
 
                 $profitBersih = max($hargaJual - $feeMarketing, 0);
                 $customerShare = (int) ($profitBersih * 0.3);
 
-                $product->finance = [
-                    'harga_beli'     => $hargaBeli,
-                    'harga_jual'     => $hargaJual,
-                    'fee_marketing'  => $feeMarketing,
-                    'profit_bersih'  => $profitBersih,
-                    'customer_share' => $customerShare,
-                ];
+                $totalProfitBersih       += $profitBersih;
+                $totalCustomerShare      += $customerShare;
+                $totalProyeksiKeuntungan += $customerShare;
+            }
 
-                // akumulasi ke investment
-                $totalProfitBersih  += $profitBersih;
-                $totalCustomerShare += $customerShare;
+            // ===============================
+            // ANAKAN
+            // ===============================
+            foreach ($product->children ?? [] as $child) {
+                if ($child->status === 'Terjual') {
+                    $hargaJualAnak = (int) $child->harga_jual;
 
-                return $product;
-            });
+                    $profitBersihAnak = max($hargaJualAnak - $feeMarketing, 0);
+                    $customerShareAnak = (int) ($profitBersihAnak * 0.3);
+
+                    $totalProfitBersih       += $profitBersihAnak;
+                    $totalCustomerShare      += $customerShareAnak;
+                    $totalProyeksiKeuntungan += $customerShareAnak;
+                }
+            }
+
+            // ===============================
+            // FINANCE PER INDUKAN
+            // ===============================
+            $product->finance = [
+                'is_sold' => $product->status === 'Terjual',
+                'harga_jual' => $product->harga_jual ?? 0,
+            ];
+
+            return $product;
+        });
+
 
             // ===============================
             // INVESTMENT FINANCE (REKAP)
             // ===============================
             $investment->finance = [
-                'total_profit_bersih' => $totalProfitBersih,
-                'customer_share'      => $totalCustomerShare,
+                'total_profit_bersih'        => $totalProfitBersih,
+                'customer_share'             => $totalCustomerShare,
+                'total_proyeksi_keuntungan'  => $totalProyeksiKeuntungan,
             ];
 
             return response()->json([
@@ -177,7 +199,6 @@ class InvestmentController extends Controller
             ], 500);
         }
     }
-
 
 
     public function update(Request $request, string $kode_investasi)
@@ -312,6 +333,25 @@ class InvestmentController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data Total Invest berhasil diambil',
+                'data' => $investment
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => $th,
+            ], 500);
+        }
+    }
+
+    public function getRiwayatInvestasi($users_id)
+    {
+        $investment = Investment::where('users_id', $users_id)
+                                    ->orderBy('created_at', 'desc')
+                                    ->get();
+        try {
+            return response()->json([
+                'success' => true,
+                'message' => 'Data Riwayat Investasi berhasil diambil',
                 'data' => $investment
             ], 200);
         } catch (\Throwable $th) {
