@@ -290,21 +290,19 @@ class InvestorController extends Controller
 
     public function kuitansi($kode)
     {
-        try {
-            $invest = Investment::with('users')
-                ->where('kode_investasi', $kode)
-                ->firstOrFail();
+        ini_set('memory_limit', '512M');
 
-            $pdf = Pdf::loadView('kuitansi', [
-                'invest' => $invest
-            ])->setPaper('a4');
+        $invest = Investment::with('users')
+            ->where('kode_investasi', $kode)
+            ->first();
 
-            return $pdf->stream('kuitansi-'.$kode.'.pdf');
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => $e->getMessage()
-            ]);
+        if (!$invest) {
+            return response()->json(['error' => 'Data tidak ditemukan']);
         }
+
+        return response()->json([
+            'success' => true,
+            'nama' => $invest->users->nama_users ?? 'null'
+        ]);
     }
 }
