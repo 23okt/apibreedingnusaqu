@@ -1,3 +1,10 @@
+@php
+$logo = base64_encode(file_get_contents(public_path('images/nusaqu.png')));
+$logoFarm = base64_encode(file_get_contents(public_path('images/nusafarm.png')));
+$logoTtd = base64_encode(file_get_contents(public_path('images/ttd.png')));
+@endphp
+
+
 <!DOCTYPE html>
 <html>
 
@@ -107,7 +114,7 @@
     <table class="header-table">
         <tr>
             <td class="logo-left text-right" width="25%">
-                <img src="{{ public_path('images/nusaqu.png') }}">
+                <img src="data:image/png;base64,{{ $logo }}">
             </td>
 
             <td class="text-center" width="50%">
@@ -119,7 +126,7 @@
             </td>
 
             <td class="logo-right text-left" width="25%">
-                <img src="{{ public_path('images/nusafarm.png') }}">
+                <img src="data:image/png;base64,{{ $logoFarm }}">
             </td>
         </tr>
     </table>
@@ -194,10 +201,10 @@
 
     <!-- SIGNATURE -->
     <div class="signature text-right" style="margin-top:30px;">
-        <h6>
+        <h3>
             Bogor, {{ $invest->tanggal_investasi->format('d F Y') }}
-        </h6>
-        <img src="{{ public_path('images/ttd.png') }}"><br>
+        </h3>
+        <img src="data:image/png;base64,{{ $logoTtd }}"><br>
         <span>( Nanang Sugiarto )</span>
     </div>
 
