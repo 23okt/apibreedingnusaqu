@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
-        $middleware->append(HandleCors::class);
+        $middleware->prepend(HandleCors::class);
 
         $middleware->alias([
             'checkuser' => \App\Http\Middleware\CheckUser::class,
