@@ -44,9 +44,9 @@ class HealthRecordController extends Controller
                 'notes' => 'required|string',
                 'product_id' => 'required|exists:product,id_product',
                 'status_kesehatan' => 'required',
-                'photo1' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
-                'photo2' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
-                'photo3' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
+                'photo1' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg,webp",
+                'photo2' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg,webp",
+                'photo3' => "required|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg,webp",
             ]);
 
             if ($validator->fails()) {
@@ -146,9 +146,9 @@ class HealthRecordController extends Controller
             'product_id' => 'string|exists:product,id_product',
             'notes' => 'required|string',
             'status_kesehatan' => 'required|string',
-            'photo1' => "nullable|file|max:$FILE_SIZE|mimes:png,jpg,jpeg",
-            'photo2' => "nullable|file|max:$FILE_SIZE|mimes:png,jpg,jpeg",
-            'photo3' => "nullable|file|max:$FILE_SIZE|mimes:png,jpg,jpeg",
+            'photo1' => "nullable|file|max:$FILE_SIZE|mimes:png,jpg,jpeg,webp",
+            'photo2' => "nullable|file|max:$FILE_SIZE|mimes:png,jpg,jpeg,webp",
+            'photo3' => "nullable|file|max:$FILE_SIZE|mimes:png,jpg,jpeg,webp",
         ]);
 
 

@@ -50,7 +50,7 @@ class InvestmentController extends Controller
                 Rule::requiredIf($request->metode_pembayaran !== 'Lanjutan'),
                 'file',
                 "max:{$FILE_SIZE}",
-                "mimes:png,jpg,jpeg"
+                "mimes:png,jpg,jpeg,webp"
             ]
         ];
         
@@ -222,7 +222,7 @@ class InvestmentController extends Controller
                 'jumlah_inves' => 'required|int|min:1',
                 'jumlah_inves_terbilang' => 'required|string|min:1',
                 'metode_pembayaran' => 'required|string|min:1',
-                'bukti_pembayaran' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg",
+                'bukti_pembayaran' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg,webp",
                 'tanggal_investasi' => 'required|string',
                 'status' => 'required|string',
                 'description' => 'required|string|min:5',
