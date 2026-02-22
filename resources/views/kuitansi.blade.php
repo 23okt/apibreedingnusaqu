@@ -117,7 +117,7 @@ $logoTtd = base64_encode(file_get_contents(public_path('images/ttd.png')));
                 <img src="data:image/png;base64,{{ $logo }}">
             </td>
 
-            <td class="text-center" width="50%">
+            <td class="text-center" width="60%">
                 <div class="company-title">nusaQu Indonesia</div>
                 <div class="company-address">
                     Office : Jalan Kandang Sapi, RT.02/RW.08, Sasak Panjang,<br>
