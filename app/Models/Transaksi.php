@@ -13,15 +13,10 @@ class Transaksi extends Model
     protected $keyType = 'string';
     protected $primaryKey = 'id_transaksi';
     protected $table = 'transaksi';
-    protected $fillable = ['id_transaksi','kode_transaksi','product_id','users_id','harga_beli','harga_jual','bobot'];
+    protected $fillable = ['id_transaksi','kode_transaksi','nama_pembeli','tanggal_transaksi','bukti_pembayaran', 'status_pembayaran', 'jumlah_nominal', 'jumlah_nominal_terbilang'];
 
-    public function product(): BelongsTo
+    public function itemTransaksi()
     {
-        return $this->belongsTo(Goats::class);
-    }
-
-    public function users(): BelongsTo
-    {
-        return $this->belongsTo(Users::class);
+        return $this->hasMany(ItemTransaksi::class, 'transaksi_id', 'id_transaksi');
     }
 }
