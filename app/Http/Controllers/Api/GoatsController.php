@@ -363,7 +363,7 @@ class GoatsController extends Controller
             ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
             ->join('product', 'product.id_product', '=', 'item_investment.product_id')
             ->where('investasi.users_id', $userId)
-            ->where('product.jenis_product', 'anakan')
+            ->where('product.jenis_product', 'Anakan')
             ->distinct()
             ->count('product.id_product');
 
@@ -372,7 +372,7 @@ class GoatsController extends Controller
             ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
             ->join('perkawinan', 'perkawinan.female_id', '=', 'product.id_product')
             ->where('investasi.users_id', $userId)
-            ->where('product.jenis_product', 'indukan')
+            ->where('product.jenis_product', 'Indukan')
             ->where('perkawinan.status', 'Proses')
             ->distinct()
             ->count('product.id_product');
