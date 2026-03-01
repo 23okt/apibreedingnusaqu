@@ -360,8 +360,7 @@ class GoatsController extends Controller
                 ->count('item_investment.product_id');
 
             $totalAnakan = DB::table('product as anakan')
-                ->join('perkawinan', 'perkawinan.id_breeding', '=', 'anakan.perkawinan_id')
-                ->join('product as indukan', 'indukan.id_product', '=', 'perkawinan.female_id')
+                ->join('product as indukan', 'indukan.id_product', '=', 'anakan.mother_id')
                 ->join('item_investment', 'item_investment.product_id', '=', 'indukan.id_product')
                 ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
                 ->where('investasi.users_id', $userId)
