@@ -55,7 +55,6 @@ class GoatsController extends Controller
                 'status' => 'required|string',
                 'mother_id' => 'nullable|exists:product,id_product',
                 'father_id' =>'nullable|exists:product,id_product',
-                // 'users_id' => 'nullable|exists:users,kode_unik',
                 'kandang_id' => 'nullable|exists:kandang,kode_kandang',
             ]);
     
@@ -231,9 +230,10 @@ class GoatsController extends Controller
                 $result['kode_product'] = $prefix . '-' . str_pad($number, 3, '0', STR_PAD_LEFT);
             }
             
-            $kandang = Cage::where('kode_kandang', $result['kandang_id'])->firstOrFail();
-    
-            $result['kandang_id'] = $kandang->id_kandang;
+            if (!empty($result['kandang_id'])) {
+                $kandang = Cage::where('kode_kandang', $result['kandang_id'])->firstOrFail();
+                $result['kandang_id'] = $kandang->id_kandang;
+            }
             
             $photos = ['photo1','photo2','photo3'];
             foreach ($photos as $photo) {
