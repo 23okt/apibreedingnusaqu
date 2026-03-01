@@ -26,6 +26,9 @@ Route::prefix('v1')->group(function() {
         Route::middleware('auth:api')->group(function(){
             Route::post('logout', [AuthController::class, 'logout']);
         });
+
+        Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     });
 
     Route::apiResource('mitra', InvestorController::class)
@@ -116,5 +119,4 @@ Route::prefix('v1')->group(function() {
     // Route::get('/product/fathers', [GoatsController::class, 'getOnlyMotherId']);
     Route::apiResource('timbangan', TimbanganController::class);
     Route::get('/riwayat/{users_id}', [InvestmentController::class, 'getRiwayatInvestasi']);
-    
 });

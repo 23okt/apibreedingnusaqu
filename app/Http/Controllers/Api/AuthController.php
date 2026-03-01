@@ -8,6 +8,9 @@ use App\Models\Users;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -105,4 +108,80 @@ class AuthController extends Controller
         }
     }
 
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'no_telp' => 'required|string|exists:users,no_telp'
+        ]);
+
+        $user = Users::where('no_telp', $request->no_telp)->first();
+
+        $token = Str::random(64);
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+
+        $resetLink = $frontendUrl . '/reset-password?token=' . $token;
+
+        DB::table('reset_password')->updateOrInsert(
+            ['no_telp' => $request->no_telp],
+            [
+                'token' => $token,
+                'expires_at' => Carbon::now()->addMinutes(10),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reset link generated',
+            'reset_link' => $resetLink
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string',
+            'password' => 'required|min:6|confirmed'
+        ]);
+
+        $resetData = DB::table('reset_password')
+            ->where('token', $request->token)
+            ->first();
+
+        if (!$resetData) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token tidak valid'
+            ], 400);
+        }
+
+        if (Carbon::now()->greaterThan($resetData->expires_at)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token sudah kadaluarsa'
+            ], 400);
+        }
+
+        $user = Users::where('no_telp', $resetData->no_telp)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan'
+            ], 404);
+        }
+
+        $user->pass_users = Hash::make($request->password);
+        $user->save();
+
+        DB::table('reset_password')
+            ->where('no_telp', $resetData->no_telp)
+            ->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password berhasil direset'
+        ]);
+    }
 }
