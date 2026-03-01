@@ -351,50 +351,52 @@ class GoatsController extends Controller
 
     
     public function getDashboardStats($userId)
-{
-    try {
-        $totalDomba = DB::table('item_investment')
-            ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
-            ->where('investasi.users_id', $userId)
-            ->distinct()
-            ->count('item_investment.product_id');
+    {
+        try {
+            $totalDomba = DB::table('item_investment')
+                ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
+                ->where('investasi.users_id', $userId)
+                ->distinct()
+                ->count('item_investment.product_id');
 
-        $totalAnakan = DB::table('item_investment')
-            ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
-            ->join('product', 'product.id_product', '=', 'item_investment.product_id')
-            ->where('investasi.users_id', $userId)
-            ->where('product.jenis_product', 'Anakan')
-            ->distinct()
-            ->count('product.id_product');
+            $totalAnakan = DB::table('product as anakan')
+                ->join('perkawinan', 'perkawinan.id_perkawinan', '=', 'anakan.perkawinan_id')
+                ->join('product as indukan', 'indukan.id_product', '=', 'perkawinan.female_id')
+                ->join('item_investment', 'item_investment.product_id', '=', 'indukan.id_product')
+                ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
+                ->where('investasi.users_id', $userId)
+                ->where('anakan.jenis_product', 'Anakan')
+                ->distinct()
+                ->count('anakan.id_product');
 
-        $aktifBreeding = DB::table('product')
-            ->join('item_investment', 'item_investment.product_id', '=', 'product.id_product')
-            ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
-            ->join('perkawinan', 'perkawinan.female_id', '=', 'product.id_product')
-            ->where('investasi.users_id', $userId)
-            ->where('product.jenis_product', 'Indukan')
-            ->where('perkawinan.status', 'Proses')
-            ->distinct()
-            ->count('product.id_product');
+            $aktifBreeding = DB::table('product')
+                ->join('item_investment', 'item_investment.product_id', '=', 'product.id_product')
+                ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
+                ->join('perkawinan', 'perkawinan.female_id', '=', 'product.id_product')
+                ->where('investasi.users_id', $userId)
+                ->where('product.jenis_product', 'Indukan')
+                ->where('perkawinan.status', 'Proses')
+                ->distinct()
+                ->count('product.id_product');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Dashboard stats berhasil diambil',
-            'data' => [
-                'total_domba'            => $totalDomba,
-                'total_anakan'           => $totalAnakan,
-                'aktif_breeding'         => $aktifBreeding,
-            ]
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Dashboard stats berhasil diambil',
+                'data' => [
+                    'total_domba'            => $totalDomba,
+                    'total_anakan'           => $totalAnakan,
+                    'aktif_breeding'         => $aktifBreeding,
+                ]
+            ], 200);
 
-    } catch (\Throwable $th) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil dashboard stats',
-            'data' => $th->getMessage(),
-        ], 500);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil dashboard stats',
+                'data' => $th->getMessage(),
+            ], 500);
+        }
     }
-}
 
 
 
