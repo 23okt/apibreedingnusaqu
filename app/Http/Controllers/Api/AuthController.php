@@ -118,9 +118,9 @@ class AuthController extends Controller
 
         $token = Str::random(64);
         //local
-        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5174');
+        // $frontendUrl = env('FRONTEND_URL', 'http://localhost:5174');
         //production
-        // $frontendUrl = env('FRONTEND_URL', 'https://mitra.breeding.nusaqu.id');
+        $frontendUrl = env('FRONTEND_URL', 'https://mitra.breeding.nusaqu.id');
 
         $resetLink = $frontendUrl . '/reset-password?token=' . $token;
 
