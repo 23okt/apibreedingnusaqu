@@ -115,7 +115,11 @@ class BirthController extends Controller
 
     public function show($kode_kelahiran)
     {
-        $birth = Birth::where('kode_kelahiran', $kode_kelahiran)->first();
+        $birth = Birth::with([
+            'breed.male',
+            'breed.female',
+            'details.goat'
+        ])->where('kode_kelahiran', $kode_kelahiran)->first();
 
         try {
             if (!$birth) {

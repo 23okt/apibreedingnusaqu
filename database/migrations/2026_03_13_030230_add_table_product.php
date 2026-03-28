@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('product', function (Blueprint $table) {
+            $table->unsignedBigInteger('investor_id')->nullable()->after('father_id');
+
+            $table->foreign('investor_id')
+                ->references('id_users')
+                ->on('users')
+                ->onDelete('cascade');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('product', function (Blueprint $table) {
+            if (!Schema::hasColumn('product', 'investor_id')) {
+                $table->unsignedBigInteger('investor_id')->nullable();
+
+                $table->foreign('investor_id')
+                    ->references('id_users')
+                    ->on('users')
+                    ->onDelete('cascade');
+            }
+        });
+    }
+};

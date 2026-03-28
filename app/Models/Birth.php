@@ -12,7 +12,7 @@ class Birth extends Model
 
     protected $fillable = ['id_kelahiran','kode_kelahiran','breeding_id','birth_date','offspring_count', 'notes'];
 
-    public function breed(): BelongsTo
+    public function breed()
     {
         return $this->belongsTo(Breeding::class, 'breeding_id' , 'id_breeding');
     }

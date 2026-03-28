@@ -17,16 +17,11 @@ class Goats extends Model
     protected $table = 'product';
     protected $primaryKey = 'id_product';
 
-    protected $fillable = ['id_product','kode_product', 'jenis_product','type_product', 'gender', 'birth_date', 'harga_jual','harga_beli','bobot', 'photo1','photo2','photo3','status', 'mother_id', 'father_id', 'users_id', 'kandang_id'];
+    protected $fillable = ['id_product','kode_product', 'jenis_product','type_product', 'gender', 'birth_date', 'harga_jual','harga_beli','bobot', 'photo1','photo2','photo3','status', 'mother_id', 'father_id', 'users_id', 'kandang_id','investor_id'];
 
     public function cage()
     {
         return $this->belongsTo(Cage::class, 'kandang_id', 'id_kandang');
-    }
-
-    public function users()
-    {
-        return $this->belongsTo(Supplier::class);
     }
 
     public function mother()
@@ -65,6 +60,11 @@ class Goats extends Model
             ->orderByDesc('check_date');
     }
 
+    public function investor()
+    {
+        return $this->belongsTo(Users::class, 'investor_id', 'id_users');
+    }
+
     //Relasi ke Data Investasi
     public function investments()
     {
@@ -86,7 +86,7 @@ class Goats extends Model
     //Relasi ke Data Kelahiran
     public function birthDetail()
     {
-        return $this->hasOne(ItemKelahiran::class, 'product_id', 'id_product');
+        return $this->hasMany(ItemKelahiran::class, 'product_id', 'id_product');
     }
 
     public function birth()

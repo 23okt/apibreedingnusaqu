@@ -117,7 +117,10 @@ class AuthController extends Controller
         $user = Users::where('no_telp', $request->no_telp)->first();
 
         $token = Str::random(64);
-        $frontendUrl = env('FRONTEND_URL', 'https://mitra.breeding.nusaqu.id');
+        //local
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5174');
+        //production
+        // $frontendUrl = env('FRONTEND_URL', 'https://mitra.breeding.nusaqu.id');
 
         $resetLink = $frontendUrl . '/reset-password?token=' . $token;
 

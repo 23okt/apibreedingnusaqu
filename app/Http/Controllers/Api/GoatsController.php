@@ -56,6 +56,7 @@ class GoatsController extends Controller
                 'mother_id' => 'nullable|exists:product,id_product',
                 'father_id' =>'nullable|exists:product,id_product',
                 'kandang_id' => 'nullable|exists:kandang,kode_kandang',
+                'investor_id' => 'nullable|exists:users,id_users',
             ]);
     
             if ($validator->fails()) {
@@ -114,18 +115,25 @@ class GoatsController extends Controller
 
     public function show($kode_product)
     {
+        $userId = auth()->user()->id_users;
         $goats = Goats::with([
-            'children',
             'health',
             'mother:id_product,kode_product',
             'father:id_product,kode_product',
             'breedingAsFemale.male:id_product,kode_product',
             'breedingAsFemale.female:id_product,kode_product',
+            'investor:id_users,nama_users,kode_unik',
             'timbangan'
         ])
         ->withSum('investments as total_investasi', 'item_investment.jumlah_investasi')
         ->where('kode_product', $kode_product)
         ->first();
+
+        $children = Goats::where('mother_id', $goats->id_product)
+        ->where('investor_id', $userId)
+        ->get();
+
+        $goats->children = $children;
 
         try {
             if (!$goats) {
@@ -140,7 +148,7 @@ class GoatsController extends Controller
             $hargaJual = (int) $goats->harga_jual;
             $hargaBeli = (int) $goats->harga_beli;
 
-            $feeMarketing = 500000;
+            $feeMarketing = 350000;
             $profitBersih = max($hargaJual - $feeMarketing, 0);
 
             $customerShare = (int) ($profitBersih * 0.3);
@@ -173,29 +181,32 @@ class GoatsController extends Controller
     {
         $FILE_SIZE = 1024 * 5;
         $goats = Goats::where('kode_product', $kode_product)->first();
-        
+
         try {
+
             if (!$goats) {
                 return response()->json([
                     'message' => 'ID tidak ditemukan',
                 ], 404);
             }
+
             $validator = Validator::make($request->all(), [
-                    'kode_product' => 'nullable|unique:product,kode_product',
-                    'jenis_product' => 'required|string',
-                    'type_product' => 'required|string',
-                    'gender' => 'required|string',
-                    'birth_date' => 'nullable|date',
-                    'bobot' => 'required|integer',
-                    'harga_jual' => 'nullable|integer',
-                    'harga_beli' => 'nullable|integer',
-                    'photo1' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg,webp",
-                    'photo2' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg,webp",
-                    'photo3' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg,webp",
-                    'status' => 'required|string',
-                    'mother_id' => 'nullable|exists:product,id_product',
-                    'father_id' =>'nullable|exists:product,id_product',
-                    'kandang_id' => 'nullable|exists:kandang,kode_kandang',
+                'kode_product' => 'nullable|unique:product,kode_product,' . $goats->id_product . ',id_product',
+                'jenis_product' => 'required|string',
+                'type_product' => 'required|string',
+                'gender' => 'required|string',
+                'birth_date' => 'nullable|date',
+                'bobot' => 'required|integer',
+                'harga_jual' => 'nullable|integer',
+                'harga_beli' => 'nullable|integer',
+                'photo1' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg,webp",
+                'photo2' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg,webp",
+                'photo3' => "nullable|file|max:{$FILE_SIZE}|mimes:png,jpg,jpeg,webp",
+                'status' => 'required|string',
+                'mother_id' => 'nullable|exists:product,id_product',
+                'father_id' =>'nullable|exists:product,id_product',
+                'kandang_id' => 'nullable|exists:kandang,kode_kandang',
+                'investor_id' => 'nullable|exists:users,id_users',
             ]);
 
             if ($validator->fails()) {
@@ -206,6 +217,7 @@ class GoatsController extends Controller
             }
 
             $result = $validator->validated();
+
             $jenis  = strtolower($result['jenis_product']);
             $gender = strtolower($result['gender']);
 
@@ -215,71 +227,74 @@ class GoatsController extends Controller
                 $prefix = $gender === 'male' ? 'DQ' : 'BQ';
             }
 
+            // ambil nomor lama
             $oldKode = $goats->kode_product;
+
             if (str_contains($oldKode, '-')) {
                 [$oldPrefix, $number] = explode('-', $oldKode);
             } else {
                 $number = '001';
             }
 
+            // hanya ubah prefix, nomor tetap
             $needRegenerateKode =
                 strtolower($goats->jenis_product) !== $jenis ||
                 strtolower($goats->gender) !== $gender;
 
             if ($needRegenerateKode) {
-                $result['kode_product'] = $prefix . '-' . str_pad($number, 3, '0', STR_PAD_LEFT);
+                $result['kode_product'] = $prefix . '-' . $number;
             }
-            
+
             if (!empty($result['kandang_id'])) {
                 $kandang = Cage::where('kode_kandang', $result['kandang_id'])->firstOrFail();
                 $result['kandang_id'] = $kandang->id_kandang;
             }
-            
+
             $photos = ['photo1','photo2','photo3'];
+
             foreach ($photos as $photo) {
+
                 if ($request->hasFile($photo)) {
 
-                    //Update foto lama
-                    if (!empty($goats[$photo])) {
-                        try {
-                            $publicId = $this->getPublicIdFromCloudinaryUrl($goats[$photo]);
-                        } catch (\Throwable $th) {
-                            return $th->getMessage();
-                        }
-                    }
-
-                    //Upload foto baru
                     try {
+
                         $file = $request->file($photo)->getRealPath();
-                        $cloudinary = new Cloudinary();
-        
+
                         $uploadFile = Cloudinary::uploadApi()->upload($file, [
                             'folder' => 'nusaqu'
                         ]);
-        
+
                         $result[$photo] = $uploadFile['secure_url'];
+
                     } catch (\Exception $e) {
+
                         return response()->json([
                             'message' => 'Failed to upload image to Cloudinary',
                             'error' => $e->getMessage()
                         ], 500);
+
                     }
+
                 }
+
             }
-            
+
             $goats->update($result);
+
             return response()->json([
                 'success' => true,
                 'messsage' => 'Data kambing has successfully updated',
-                'data' =>  $goats
+                'data' => $goats
             ], 200);
-            
+
         } catch (\Throwable $th) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Data kambing gagal diubah.',
                 'data' => $th->getMessage()
             ], 500);
+
         }
     }
 
@@ -359,14 +374,10 @@ class GoatsController extends Controller
                 ->distinct()
                 ->count('item_investment.product_id');
 
-            $totalAnakan = DB::table('product as anakan')
-                ->join('product as indukan', 'indukan.id_product', '=', 'anakan.mother_id')
-                ->join('item_investment', 'item_investment.product_id', '=', 'indukan.id_product')
-                ->join('investasi', 'investasi.id_investasi', '=', 'item_investment.investasi_id')
-                ->where('investasi.users_id', $userId)
-                ->where('anakan.jenis_product', 'Anakan')
-                ->distinct()
-                ->count('anakan.id_product');
+            $totalAnakan = DB::table('product')
+                ->where('jenis_product', 'Anakan')
+                ->where('investor_id', $userId)
+                ->count('id_product');
 
             $aktifBreeding = DB::table('product')
                 ->join('item_investment', 'item_investment.product_id', '=', 'product.id_product')
